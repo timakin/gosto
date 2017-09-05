@@ -20,6 +20,7 @@ var (
 
 // Gosto holds the app engine context and the request memory cache.
 type Gosto struct {
+	Context       context.Context
 	DSClient      *datastore.Client
 	inTransaction bool
 	// KindNameResolver is used to determine what Kind to give an Entity.
@@ -35,6 +36,7 @@ func NewGosto(ctx context.Context, projectID string) (*Gosto, error) {
 	}
 
 	return &Gosto{
+		Context:          ctx,
 		DSClient:         client,
 		KindNameResolver: DefaultKindName,
 	}, nil
@@ -76,7 +78,7 @@ func (g *Gosto) Key(src interface{}) *datastore.Key {
 // Kind returns src's datastore Kind or "" on error.
 func (g *Gosto) Kind(src interface{}) string {
 	if k, err := g.KeyError(src); err == nil {
-		return k.Kind()
+		return k.Kind
 	}
 	return ""
 }
@@ -92,21 +94,14 @@ func (g *Gosto) KeyError(src interface{}) (*datastore.Key, error) {
 //
 // Otherwise similar to appengine/datastore.RunInTransaction:
 // https://developers.google.com/appengine/docs/go/datastore/reference#RunInTransaction
-func (g *Gosto) RunInTransaction(f func(tg *Gosto) error, opts *datastore.TransactionOptions) error {
-	var ng *Gosto
-	err := datastore.RunInTransaction(g.Context, func(tc context.Context) error {
-		ng = &Gosto{
-			Context:          tc,
-			inTransaction:    true,
-			KindNameResolver: g.KindNameResolver,
-		}
-		return f(ng)
-	}, opts)
-
+func (g *Gosto) RunInTransaction(f func(tx *datastore.Transaction) error, opts ...datastore.TransactionOption) error {
+	_, err := g.DSClient.RunInTransaction(g.Context, func(tx *datastore.Transaction) error {
+		return f(tx)
+	}, opts...)
 	if err != nil {
+		return err
 	}
-
-	return err
+	return nil
 }
 
 // Put saves the entity src into the datastore based on src's key k. If k
@@ -270,18 +265,15 @@ func (g *Gosto) GetMulti(dst interface{}) error {
 				}
 				for i, idx := range dixs[lo:hi] {
 					if merr[i] == nil || (IgnoreFieldMismatch && errFieldMismatch(merr[i])) {
-						toCache = append(toCache, dsdst[lo+i])
 						exists = append(exists, 1)
 					} else {
 						if merr[i] == datastore.ErrNoSuchEntity {
-							toCache = append(toCache, dsdst[lo+i])
 							exists = append(exists, 0)
 						}
 						multiErr[idx] = merr[i]
 					}
 				}
 			} else {
-				toCache = append(toCache, dsdst[lo:hi]...)
 				exists = append(exists, bytes.Repeat([]byte{1}, hi-lo)...)
 			}
 		}(i)
