@@ -144,7 +144,7 @@ func (g *Gosto) PutMulti(src interface{}) ([]*datastore.Key, error) {
 			if hi > len(keys) {
 				hi = len(keys)
 			}
-			rkeys, pmerr := datastore.PutMulti(g.Context, keys[lo:hi], v.Slice(lo, hi).Interface())
+			rkeys, pmerr := datastore.PutMulti(keys[lo:hi], v.Slice(lo, hi).Interface())
 			if pmerr != nil {
 				mu.Lock()
 				any = true // this flag tells PutMulti to return multiErr later

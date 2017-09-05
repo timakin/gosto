@@ -9,7 +9,7 @@ import (
 
 // Count returns the number of results for the query.
 func (g *Gosto) Count(q *datastore.Query) (int, error) {
-	return q.Count(g.Context)
+	return g.DSClient.Count(g.Context, q)
 }
 
 // GetAll runs the query and returns all the keys that match the query, as well
@@ -38,14 +38,13 @@ func (g *Gosto) GetAll(q *datastore.Query, dst interface{}) ([]*datastore.Key, e
 		vLenBefore = v.Len()
 	}
 
-	keys, err := q.GetAll(g.Context, dst)
+	keys, err := g.DSClient.GetAll(g.Context, q, dst)
 	if err != nil {
 		if errFieldMismatch(err) {
 			if IgnoreFieldMismatch {
 				err = nil
 			}
 		} else {
-			g.error(err)
 			return keys, err
 		}
 	}
@@ -94,7 +93,7 @@ func (g *Gosto) GetAll(q *datastore.Query, dst interface{}) ([]*datastore.Key, e
 func (g *Gosto) Run(q *datastore.Query) *Iterator {
 	return &Iterator{
 		g: g,
-		i: q.Run(g.Context),
+		i: g.DSClient.Run(g.Context, q),
 	}
 }
 
