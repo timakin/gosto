@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"reflect"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"cloud.google.com/go/datastore"
 )
@@ -19,36 +20,24 @@ var (
 
 // Gosto holds the app engine context and the request memory cache.
 type Gosto struct {
-	Context       context.Context
-	cache         map[string]interface{}
-	cacheLock     sync.RWMutex // protect the cache from concurrent goroutines to speed up RPC access
+	DSClient      *datastore.Client
 	inTransaction bool
-	txnCacheLock  sync.Mutex // protects toSet / toDelete / toDeleteMC
-	toSet         map[string]interface{}
-	toDelete      map[string]bool
-	toDeleteMC    map[string]bool
 	// KindNameResolver is used to determine what Kind to give an Entity.
 	// Defaults to DefaultKindName
 	KindNameResolver KindNameResolver
 }
 
 // NewGosto creates a new Gosto object from the given request.
-func NewGosto(r *http.Request) *Gosto {
-	return &Gosto{
-		Context:          c,
-		cache:            make(map[string]interface{}),
-		KindNameResolver: DefaultKindName,
+func NewGosto(ctx context.Context, projectID string) (*Gosto, error) {
+	client, err := datastore.NewClient(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Gosto: failed to initialize a datastore client.")
 	}
-}
 
-// FromContext creates a new Gosto object from the given appengine Context.
-// Useful with profiling packages like appstats.
-func FromContext(c context.Context) *Gosto {
 	return &Gosto{
-		Context:          c,
-		cache:            make(map[string]interface{}),
+		DSClient:         client,
 		KindNameResolver: DefaultKindName,
-	}
+	}, nil
 }
 
 func (g *Gosto) extractKeys(src interface{}, putRequest bool) ([]*datastore.Key, error) {
@@ -61,13 +50,13 @@ func (g *Gosto) extractKeys(src interface{}, putRequest bool) ([]*datastore.Key,
 	keys := make([]*datastore.Key, l)
 	for i := 0; i < l; i++ {
 		vi := v.Index(i)
-		key, hasStringId, err := g.getStructKey(vi.Interface())
+		key, hasStringID, err := g.getStructKey(vi.Interface())
 		if err != nil {
 			return nil, err
 		}
 		if !putRequest && key.Incomplete() {
 			return nil, fmt.Errorf("Gosto: cannot find a key for struct - %v", vi.Interface())
-		} else if putRequest && key.Incomplete() && hasStringId {
+		} else if putRequest && key.Incomplete() && hasStringID {
 			return nil, fmt.Errorf("Gosto: empty string id on put")
 		}
 		keys[i] = key
@@ -109,9 +98,6 @@ func (g *Gosto) RunInTransaction(f func(tg *Gosto) error, opts *datastore.Transa
 		ng = &Gosto{
 			Context:          tc,
 			inTransaction:    true,
-			toSet:            make(map[string]interface{}),
-			toDelete:         make(map[string]bool),
-			toDeleteMC:       make(map[string]bool),
 			KindNameResolver: g.KindNameResolver,
 		}
 		return f(ng)
@@ -185,13 +171,6 @@ func (g *Gosto) PutMulti(src interface{}) ([]*datastore.Key, error) {
 		return keys, realError(multiErr)
 	}
 	return keys, nil
-}
-
-// FlushLocalCache clears the local memory cache.
-func (g *Gosto) FlushLocalCache() {
-	g.cacheLock.Lock()
-	g.cache = make(map[string]interface{})
-	g.cacheLock.Unlock()
 }
 
 // Get loads the entity based on dst's key into dst

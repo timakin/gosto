@@ -250,7 +250,6 @@ func bootstrapSerializationEncoder(se *serializationEncoder, updateSEBootBytes b
 	se.enc.Encode(seBoot.v01)
 	se.enc.Encode(seBoot.v02)
 	se.enc.Encode(seBoot.v03)
-	se.enc.Encode(seBoot.v03)
 	se.enc.Encode(seBoot.v04)
 	se.enc.Encode(seBoot.v05)
 	se.enc.Encode(seBoot.v06)
@@ -679,7 +678,7 @@ func deserializeStructInternal(dec *gob.Decoder, fi *fieldInfo, fieldName string
 // getStructKey returns the key of the struct based in its reflected or
 // specified kind and id. The second return parameter is true if src has a
 // string id.
-func (g *Goon) getStructKey(src interface{}) (key *datastore.Key, hasStringId bool, err error) {
+func (g *Gosto) getStructKey(src interface{}) (key *datastore.Key, hasStringId bool, err error) {
 	v := reflect.Indirect(reflect.ValueOf(src))
 	t := v.Type()
 	k := t.Kind()
@@ -749,7 +748,13 @@ func (g *Goon) getStructKey(src interface{}) (key *datastore.Key, hasStringId bo
 	if kind == "" {
 		kind = g.KindNameResolver(src)
 	}
-	key = datastore.NewKey(g.Context, kind, stringID, intID, parent)
+
+	if intID != 0 {
+		key = datastore.IDKey(kind, intID, parent)
+	} else {
+		key = datastore.NameKey(kind, stringID, parent)
+	}
+
 	return
 }
 
@@ -762,7 +767,7 @@ func DefaultKindName(src interface{}) string {
 	return t.Name()
 }
 
-func (g *Goon) setStructKey(src interface{}, key *datastore.Key) error {
+func (g *Gosto) setStructKey(src interface{}, key *datastore.Key) error {
 	v := reflect.ValueOf(src)
 	t := v.Type()
 	k := t.Kind()
