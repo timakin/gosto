@@ -144,7 +144,7 @@ func (g *Gosto) PutMulti(src interface{}) ([]*datastore.Key, error) {
 			if hi > len(keys) {
 				hi = len(keys)
 			}
-			rkeys, pmerr := datastore.PutMulti(keys[lo:hi], v.Slice(lo, hi).Interface())
+			rkeys, pmerr := g.DSClient.PutMulti(g.Context, keys[lo:hi], v.Slice(lo, hi).Interface())
 			if pmerr != nil {
 				mu.Lock()
 				any = true // this flag tells PutMulti to return multiErr later
@@ -210,7 +210,7 @@ func (g *Gosto) GetMulti(dst interface{}) error {
 
 	if g.inTransaction {
 		// todo: support getMultiLimit in transactions
-		if err := datastore.GetMulti(g.Context, keys, v.Interface()); err != nil {
+		if err := g.DSClient.GetMulti(g.Context, keys, v.Interface()); err != nil {
 			if merr, ok := err.(datastore.MultiError); ok {
 				for i := 0; i < len(keys); i++ {
 					if merr[i] != nil && (!IgnoreFieldMismatch || !errFieldMismatch(merr[i])) {
@@ -251,7 +251,7 @@ func (g *Gosto) GetMulti(dst interface{}) error {
 			if hi > len(dskeys) {
 				hi = len(dskeys)
 			}
-			gmerr := datastore.GetMulti(g.Context, dskeys[lo:hi], dsdst[lo:hi])
+			gmerr := g.DSClient.GetMulti(g.Context, dskeys[lo:hi], dsdst[lo:hi])
 			if gmerr != nil {
 				mu.Lock()
 				anyErr = true // this flag tells GetMulti to return multiErr later
@@ -347,7 +347,7 @@ func (g *Gosto) DeleteMulti(keys []*datastore.Key) error {
 			if hi > len(keys) {
 				hi = len(keys)
 			}
-			dmerr := datastore.DeleteMulti(g.Context, keys[lo:hi])
+			dmerr := g.DSClient.DeleteMulti(g.Context, keys[lo:hi])
 			if dmerr != nil {
 				mu.Lock()
 				any = true // this flag tells DeleteMulti to return multiErr later

@@ -806,10 +806,10 @@ func (g *Gosto) setStructKey(src interface{}, key *datastore.Key) error {
 
 				switch vf.Kind() {
 				case reflect.Int64:
-					vf.SetInt(key.IntID())
+					vf.SetInt(key.ID)
 					idSet = true
 				case reflect.String:
-					vf.SetString(key.StringID())
+					vf.SetString(key.Name)
 					idSet = true
 				}
 			} else if tagValue == "kind" {
@@ -817,8 +817,8 @@ func (g *Gosto) setStructKey(src interface{}, key *datastore.Key) error {
 					return fmt.Errorf("gosto: Only one field may be marked kind")
 				}
 				if vf.Kind() == reflect.String {
-					if (len(tagValues) <= 1 || key.Kind() != tagValues[1]) && g.KindNameResolver(src) != key.Kind() {
-						vf.Set(reflect.ValueOf(key.Kind()))
+					if (len(tagValues) <= 1 || key.Kind != tagValues[1]) && g.KindNameResolver(src) != key.Kind {
+						vf.Set(reflect.ValueOf(key.Kind))
 					}
 					kindSet = true
 				}
