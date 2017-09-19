@@ -144,7 +144,7 @@ func (g *Gosto) PutMulti(src interface{}) ([]*datastore.Key, error) {
 			if hi > len(keys) {
 				hi = len(keys)
 			}
-			rkeys, pmerr := g.DSClient.PutMulti(g.Context, keys[lo:hi], v.Slice(lo, hi).Interface())
+			_, pmerr := g.DSClient.PutMulti(g.Context, keys[lo:hi], v.Slice(lo, hi).Interface())
 			if pmerr != nil {
 				mu.Lock()
 				any = true // this flag tells PutMulti to return multiErr later
@@ -235,8 +235,6 @@ func (g *Gosto) GetMulti(dst interface{}) error {
 	var dsdst []interface{}
 	var dixs []int
 
-	var mixs []int
-
 	mu := new(sync.Mutex)
 	goroutines := (len(dskeys)-1)/getMultiLimit + 1
 	var wg sync.WaitGroup
@@ -244,7 +242,6 @@ func (g *Gosto) GetMulti(dst interface{}) error {
 	for i := 0; i < goroutines; i++ {
 		go func(i int) {
 			defer wg.Done()
-			var toCache []interface{}
 			var exists []byte
 			lo := i * getMultiLimit
 			hi := (i + 1) * getMultiLimit

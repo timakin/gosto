@@ -829,7 +829,7 @@ func (g *Gosto) setStructKey(src interface{}, key *datastore.Key) error {
 				dskeyType := reflect.TypeOf(&datastore.Key{})
 				vfType := vf.Type()
 				if vfType.ConvertibleTo(dskeyType) {
-					vf.Set(reflect.ValueOf(key.Parent()).Convert(vfType))
+					vf.Set(reflect.ValueOf(key.Parent).Convert(vfType))
 					parentSet = true
 				}
 			}
