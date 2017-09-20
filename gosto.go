@@ -18,7 +18,7 @@ var (
 	IgnoreFieldMismatch = true
 )
 
-// Gosto holds the app engine context and the request memory cache.
+// Gosto holds the context and the request memory cache.
 type Gosto struct {
 	Context       context.Context
 	DSClient      *datastore.Client
@@ -90,10 +90,9 @@ func (g *Gosto) KeyError(src interface{}) (*datastore.Key, error) {
 }
 
 // RunInTransaction runs f in a transaction. It calls f with a transaction
-// context tg that f should use for all App Engine operations.
+// context tg that f should use for all the transaction's datastore operations.
 //
-// Otherwise similar to appengine/datastore.RunInTransaction:
-// https://developers.google.com/appengine/docs/go/datastore/reference#RunInTransaction
+// https://godoc.org/cloud.google.com/go/datastore#Client.RunInTransaction
 func (g *Gosto) RunInTransaction(f func(tx *datastore.Transaction) error, opts ...datastore.TransactionOption) error {
 	_, err := g.DSClient.RunInTransaction(g.Context, func(tx *datastore.Transaction) error {
 		return f(tx)
