@@ -166,7 +166,7 @@ if keys, err = client.PutMulti(users); err != nil {
 }
 ```
 
-### RunInTransaction(WIP)
+### RunInTransaction
 
 ```
 client, err := gosto.NewGosto(ctx, "project-id")
