@@ -1,7 +1,7 @@
 Gosto
 ----
 
-Cloud Datastore Client Wrapper in Go, for automation of key attachment.
+Google Cloud Datastore Client Wrapper in Go, for automation of key attachment.
 
 For example, inside of GKE container, you can access to datastore API of you're authorized with Service Account.
 
