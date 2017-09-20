@@ -35,7 +35,7 @@ type KindNameResolver func(src interface{}) string
 // A special bootstrapping struct that contains all the datastore-supported types
 // that need to be registered with gob. Using this to initialize every encoder/decoder,
 // we get reusable encoders/decoders. Additionally, this cuts down on the serialized bytes length.
-// https://developers.google.com/appengine/docs/go/datastore/reference
+// https://godoc.org/cloud.google.com/go/datastore#Property
 type seBootstrap struct {
 	v01 *datastore.Key
 	v02 time.Time
